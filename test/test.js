@@ -53,18 +53,27 @@ const state = Map({
   })
 });
 
-function memoize(func) {
+function createTree() {
   let lastData = Map();
   let lastResult = null;
   let refs = {};
+
   return data => {
-    lastResult = func(data, lastData, lastResult, refs);
+    lastResult = appToTreeRaw(data, lastData, lastResult, refs);
     lastData = data;
     return lastResult;
   };
 }
 
-const appToTreeRaw = (state, lastState, lastResult, refs) => {
+function pathToKey(path) {
+  return path.join('.');
+}
+
+function keyToPath(key) {
+  return key.split('.').filter(k => k.split(',').length === 1);
+}
+
+function appToTreeRaw(state, lastState, lastResult, refs) {
   const vistedPaths = [];
 
   const joinRefs = (data, path = [], force = false) => {
@@ -73,17 +82,18 @@ const appToTreeRaw = (state, lastState, lastResult, refs) => {
     }
 
     if (lastState.size) {
-      vistedPaths.push(path.join('.'));
+      vistedPaths.push(pathToKey(path));
     }
 
     if (data instanceof Array) {
-      const key = data.join('.');
+      const key = pathToKey(data);
       if (refs[key]) {
+        refs[key].paths = refs[key].paths.add(pathToKey(path))
         return refs[key].result;
       }
 
       const result = joinRefs(state.getIn(data), data, force);
-      refs[key] = { key: data, paths: [path], result };
+      refs[key] = { key: data, paths: Set.of(pathToKey(path)), result };
       return result;
     }
 
@@ -103,11 +113,11 @@ const appToTreeRaw = (state, lastState, lastResult, refs) => {
     }
 
     ref.result = joinRefs(state.getIn(ref.key), ref.key, true);
-    ref.paths.forEach(path => {
+    ref.paths.forEach(pathKey => {
+      const path = keyToPath(pathKey);
       data.setIn(path, ref.result);
-      const copyPath = [...path];
-      copyPath.pop();
-      joinDependencies(data, copyPath.join('.'));
+      path.pop();
+      joinDependencies(data, pathToKey(path));
     });
   };
 
@@ -124,7 +134,7 @@ describe('Redux Tree', () => {
   let result;
 
   beforeEach(() => {
-    appToTree = memoize(appToTreeRaw);
+    appToTree = createTree();
     result = appToTree(state);
   });
 
