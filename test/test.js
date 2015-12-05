@@ -1,17 +1,18 @@
 import { expect } from 'chai';
 import { Map, List, Set } from 'immutable';
+import { Ref, createTree } from '../src'
 
 const state = Map({
   posts: Map({
     1: Map({
       id: 1,
       name: 'post1',
-      user: ['users', '1']
+      user: Ref('users', '1')
     }),
     2: Map({
       id: 2,
       name: 'post2',
-      user: ['users', '2']
+      user: Ref('users', '2')
     }),
     3: Map({
       id: 3,
@@ -22,22 +23,22 @@ const state = Map({
     1: Map({
       id: 1,
       name: 'jan',
-      comment: ['comments', '1']
+      comment: Ref('comments', '1')
     }),
     2: Map({
       id: 2,
       name: 'piet',
       comments: List.of(
-        ['comments', '1'],
-        ['comments', '2']
+        Ref('comments', '1'),
+        Ref('comments', '2')
       )
     }),
     3: Map({
       id: 2,
       name: 'piet',
       comments: Set.of(
-        ['comments', '1'],
-        ['comments', '2']
+        Ref('comments', '1'),
+        Ref('comments', '2')
       )
     })
   }),
@@ -53,89 +54,13 @@ const state = Map({
   })
 });
 
-function createTree() {
-  let lastData = Map();
-  let lastResult = null;
-  let refs = {};
-
-  return data => {
-    lastResult = appToTreeRaw(data, lastData, lastResult, refs);
-    lastData = data;
-    return lastResult;
-  };
-}
-
-function pathToKey(path) {
-  return path.join('.');
-}
-
-function keyToPath(key) {
-  return key.split('.').filter(k => k.split(',').length === 1);
-}
-
-function appToTreeRaw(state, lastState, lastResult, refs) {
-  const vistedPaths = [];
-
-  const joinRefs = (data, path = [], force = false) => {
-    if (!force && state.getIn(path) === lastState.getIn(path)) {
-      return lastResult.getIn(path);
-    }
-
-    if (lastState.size) {
-      vistedPaths.push(pathToKey(path));
-    }
-
-    if (data instanceof Array) {
-      const key = pathToKey(data);
-      if (refs[key]) {
-        refs[key].paths = refs[key].paths.add(pathToKey(path))
-        return refs[key].result;
-      }
-
-      const result = joinRefs(state.getIn(data), data, force);
-      refs[key] = { key: data, paths: Set.of(pathToKey(path)), result };
-      return result;
-    }
-
-    if (typeof data === 'object') {
-      return data.map((d, k) => {
-        return joinRefs(d, [...path, k], force);
-      });
-    }
-
-    return data;
-  };
-
-  const joinDependencies = (data, key) => {
-    const ref = refs[key];
-    if (!ref) {
-      return;
-    }
-
-    ref.result = joinRefs(state.getIn(ref.key), ref.key, true);
-    ref.paths.forEach(pathKey => {
-      const path = keyToPath(pathKey);
-      data.setIn(path, ref.result);
-      path.pop();
-      joinDependencies(data, pathToKey(path));
-    });
-  };
-
-  return joinRefs(state).withMutations(result => {
-    vistedPaths.forEach(path => {
-      joinDependencies(result, path);
-    });
-  });
-};
-
-
 describe('Redux Tree', () => {
-  let appToTree;
+  let stateToTree;
   let result;
 
   beforeEach(() => {
-    appToTree = createTree();
-    result = appToTree(state);
+    stateToTree = createTree();
+    result = stateToTree(state);
   });
 
   describe('joins', () => {
@@ -163,13 +88,13 @@ describe('Redux Tree', () => {
 
   describe('Ref checks', () => {
     it('does nothing when nothing has changes', () => {
-      const result2 = appToTree(state);
+      const result2 = stateToTree(state);
       expect(result === result2).to.equal(true);
     });
 
     it('keeps the same ref when nothing has changes', () => {
       const updatedState = state.setIn(['posts', '1', 'name'], 'new-name');
-      const result2 = appToTree(updatedState);
+      const result2 = stateToTree(updatedState);
       expect(result === result2).to.equal(false);
       expect(result.get('comments') === result2.get('comments')).to.equal(true);
       expect(result.get('users') === result2.get('users')).to.equal(true);
@@ -179,7 +104,7 @@ describe('Redux Tree', () => {
 
     it('only updates the part of three where needed', () => {
       const updatedState = state.setIn(['posts', '1', 'name'], 'new-name');
-      const result2 = appToTree(updatedState);
+      const result2 = stateToTree(updatedState);
       expect(result.getIn(['posts', '1']) === result2.getIn(['posts', '1'])).to.equal(false);
       expect(result2.getIn(['posts', '1', 'name'])).to.equal('new-name');
     });
@@ -188,7 +113,7 @@ describe('Redux Tree', () => {
   describe('Joins after update', () => {
     it('single references', () => {
       const updatedState = state.setIn(['users', '1', 'name'], 'jantje');
-      const result2 = appToTree(updatedState);
+      const result2 = stateToTree(updatedState);
       expect(result.getIn(['users', '1']) === result2.getIn(['users', '1'])).to.equal(false);
       expect(result2.getIn(['users', '1', 'name'])).to.equal('jantje');
       expect(result2.getIn(['posts', '1', 'user', 'name'])).to.equal('jantje');
@@ -196,7 +121,7 @@ describe('Redux Tree', () => {
 
     it('nested references', () => {
       const updatedState = state.setIn(['comments', '1', 'name'], 'new-comment');
-      const result2 = appToTree(updatedState);
+      const result2 = stateToTree(updatedState);
       expect(result.getIn(['comments', '1']) === result2.getIn(['comments', '1'])).to.equal(false);
       expect(result2.getIn(['comments', '1', 'name'])).to.equal('new-comment');
       expect(result2.getIn(['posts', '1', 'user', 'comment', 'name'])).to.equal('new-comment');
@@ -204,7 +129,7 @@ describe('Redux Tree', () => {
 
     it('List references', () => {
       const updatedState = state.setIn(['comments', '1', 'name'], 'new-comment');
-      const result2 = appToTree(updatedState);
+      const result2 = stateToTree(updatedState);
       expect(result.getIn(['users', '2', 'comments', 0]) === result2.getIn(['users', 'comments', 0])).to.equal(false);
       expect(result.getIn(['users', '2', 'comments', 1]) === result2.getIn(['users', 'comments', 1])).to.equal(false);
       expect(result2.getIn(['comments', '1', 'name'])).to.equal('new-comment');
