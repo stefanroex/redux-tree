@@ -2,9 +2,9 @@ import { Map } from 'immutable';
 import stateToTree from './stateToTree';
 
 export default () => {
+  const refs = {};
   let lastState = Map();
   let lastResult = null;
-  let refs = {};
 
   return state => {
     lastResult = stateToTree({

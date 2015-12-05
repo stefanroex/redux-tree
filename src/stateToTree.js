@@ -56,8 +56,7 @@ export default ({
     ref.paths.forEach(pathKey => {
       const path = keyToPath(pathKey);
       data.setIn(path, ref.result);
-      path.pop();
-      joinDependencies(data, pathToKey(path));
+      joinDependencies(data, pathToKey(path.slice(0, -1)));
     });
   };
 
