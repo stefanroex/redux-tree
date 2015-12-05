@@ -83,7 +83,7 @@ const appToTreeRaw = (state, lastState, lastResult, refs) => {
       }
 
       const result = joinRefs(state.getIn(data), data, force);
-      refs[key] = { key: data, path, result };
+      refs[key] = { key: data, paths: [path], result };
       return result;
     }
 
@@ -103,10 +103,12 @@ const appToTreeRaw = (state, lastState, lastResult, refs) => {
     }
 
     ref.result = joinRefs(state.getIn(ref.key), ref.key, true);
-    data.setIn(ref.path, ref.result);
-    const copyPath = [...ref.path];
-    copyPath.pop();
-    joinDependencies(data, copyPath.join('.'));
+    ref.paths.forEach(path => {
+      data.setIn(path, ref.result);
+      const copyPath = [...path];
+      copyPath.pop();
+      joinDependencies(data, copyPath.join('.'));
+    });
   };
 
   return joinRefs(state).withMutations(result => {
@@ -121,7 +123,7 @@ describe('Redux Tree', () => {
   let appToTree;
   let result;
 
-  before(() => {
+  beforeEach(() => {
     appToTree = memoize(appToTreeRaw);
     result = appToTree(state);
   });
@@ -165,14 +167,16 @@ describe('Redux Tree', () => {
       expect(result.getIn(['posts', '3']) === result2.getIn(['posts', '3'])).to.equal(true);
     });
 
-    it('keeps the same ref when nothing has changes', () => {
+    it('only updates the part of three where needed', () => {
       const updatedState = state.setIn(['posts', '1', 'name'], 'new-name');
       const result2 = appToTree(updatedState);
       expect(result.getIn(['posts', '1']) === result2.getIn(['posts', '1'])).to.equal(false);
       expect(result2.getIn(['posts', '1', 'name'])).to.equal('new-name');
     });
+  });
 
-    it('updates the joined references', () => {
+  describe('Joins after update', () => {
+    it('single references', () => {
       const updatedState = state.setIn(['users', '1', 'name'], 'jantje');
       const result2 = appToTree(updatedState);
       expect(result.getIn(['users', '1']) === result2.getIn(['users', '1'])).to.equal(false);
@@ -180,12 +184,21 @@ describe('Redux Tree', () => {
       expect(result2.getIn(['posts', '1', 'user', 'name'])).to.equal('jantje');
     });
 
-    it('updates nested joined references', () => {
+    it('nested references', () => {
       const updatedState = state.setIn(['comments', '1', 'name'], 'new-comment');
       const result2 = appToTree(updatedState);
       expect(result.getIn(['comments', '1']) === result2.getIn(['comments', '1'])).to.equal(false);
       expect(result2.getIn(['comments', '1', 'name'])).to.equal('new-comment');
       expect(result2.getIn(['posts', '1', 'user', 'comment', 'name'])).to.equal('new-comment');
+    });
+
+    it('List references', () => {
+      const updatedState = state.setIn(['comments', '1', 'name'], 'new-comment');
+      const result2 = appToTree(updatedState);
+      expect(result.getIn(['users', '2', 'comments', 0]) === result2.getIn(['users', 'comments', 0])).to.equal(false);
+      expect(result.getIn(['users', '2', 'comments', 1]) === result2.getIn(['users', 'comments', 1])).to.equal(false);
+      expect(result2.getIn(['comments', '1', 'name'])).to.equal('new-comment');
+      expect(result2.getIn(['users', '2', 'comments', 0, 'name'])).to.equal('new-comment');
     });
   });
 });
