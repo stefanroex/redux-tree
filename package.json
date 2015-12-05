@@ -1,0 +1,23 @@
+{
+  "name": "redux-tree",
+  "version": "1.0.0",
+  "description": "Redux state tree with references",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --compilers js:babel-core/register --require ./test/testHelper.js test/**/*.js",
+    "test:watch": "npm test -- --watch"
+  },
+  "author": "Stefan Roex",
+  "license": "MIT",
+  "dependencies": {
+    "babel-preset-es2015": "^6.3.13",
+    "chai-immutable": "^1.5.3",
+    "immutable": "^3.7.5"
+  },
+  "devDependencies": {
+    "babel-core": "^6.3.13",
+    "babel-preset-stage-0": "^6.3.13",
+    "chai": "^3.4.1",
+    "mocha": "^2.3.4"
+  }
+}
