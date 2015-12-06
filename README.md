@@ -1,4 +1,4 @@
-# Redux Tree
+# Redux Tree (WIP)
 
 Denormalizes the Redux app state to a tree structure for easy consumption by the React views.
 
