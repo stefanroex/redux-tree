@@ -25,11 +25,14 @@ export default ({
       vistedPaths.push(pathToKey(path));
     }
 
+    if (Set.isSet(data)) {
+      return data;
+    }
+
     if (typeof data === 'string' && data.substring(0, 4) == "$ref") {
       const key = data.slice(5);
       const keyPath = keyToPath(key);
       if (refs[key]) {
-        console.log(path);
         refs[key].paths = refs[key].paths.add(pathToKey(path))
         return refs[key].result;
       }
