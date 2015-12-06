@@ -1,12 +1,5 @@
 import { Set } from 'immutable';
-
-function pathToKey(path) {
-  return path.join('|');
-}
-
-function keyToPath(key) {
-  return key.split('|');
-}
+import { pathToRef, refToPath, isRef } from './utils';
 
 export default ({
   state,
@@ -22,23 +15,22 @@ export default ({
     }
 
     if (lastState.size) {
-      vistedPaths.push(pathToKey(path));
+      vistedPaths.push(pathToRef(path));
     }
 
     if (Set.isSet(data)) {
       return data;
     }
 
-    if (typeof data === 'string' && data.substring(0, 4) == "$ref") {
-      const key = data.slice(5);
-      const keyPath = keyToPath(key);
-      if (refs[key]) {
-        refs[key].paths = refs[key].paths.add(pathToKey(path))
-        return refs[key].result;
+    if (isRef(data)) {
+      const keyPath = refToPath(data);
+      if (refs[data]) {
+        refs[data].paths = refs[data].paths.add(pathToRef(path))
+        return refs[data].result;
       }
 
       const result = joinRefs(state.getIn(keyPath), keyPath, force);
-      refs[key] = { key: keyPath, paths: Set.of(pathToKey(path)), result };
+      refs[data] = { key: keyPath, paths: Set.of(pathToRef(path)), result };
       return result;
     }
 
@@ -59,9 +51,9 @@ export default ({
 
     ref.result = joinRefs(data.getIn(ref.key), ref.key, true);
     ref.paths.forEach(pathKey => {
-      const path = keyToPath(pathKey);
+      const path = refToPath(pathKey);
       data.setIn(path, ref.result);
-      joinDependencies(data, pathToKey(path.slice(0, -1)));
+      joinDependencies(data, pathToRef(path.slice(0, -1)));
     });
   };
 
