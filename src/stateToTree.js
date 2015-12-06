@@ -4,14 +4,14 @@ import { pathToRef, refToPath, isRef } from './utils';
 export default ({
   state,
   lastState,
-  lastResult,
+  lastTree,
   refs
 }) => {
   const vistedPaths = [];
 
   const joinRefs = (data, path = [], force = false) => {
     if (!force && state.getIn(path) === lastState.getIn(path)) {
-      return lastResult.getIn(path);
+      return lastTree.getIn(path);
     }
 
     if (lastState.size) {

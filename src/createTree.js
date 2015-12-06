@@ -4,16 +4,16 @@ import stateToTree from './stateToTree';
 export default () => {
   const refs = {};
   let lastState = Map();
-  let lastResult = null;
+  let lastTree = null;
 
   return state => {
-    lastResult = stateToTree({
+    lastTree = stateToTree({
       state,
       lastState,
-      lastResult,
+      lastTree,
       refs
     });
     lastState = state;
-    return lastResult;
+    return lastTree;
   };
 }
