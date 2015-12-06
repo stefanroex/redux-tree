@@ -5,7 +5,7 @@ import {
   isRef
 } from './utils';
 
-const joinRefs = (node, path = [], options) => {
+function joinRefs(node, path = [], options) {
   const {
     vistedPaths,
     state,
@@ -48,7 +48,7 @@ const joinRefs = (node, path = [], options) => {
   return node;
 };
 
-const joinDependencies = ({state, key, options}) => {
+function joinDependencies({state, key, options}) {
   const ref = options.refs[key];
   if (!ref) {
     return state;
@@ -69,13 +69,17 @@ const joinDependencies = ({state, key, options}) => {
   }, state);
 };
 
-export default options => {
-  const state = joinRefs(options.state, [], options);
-  return options.vistedPaths.reduce((result, path) => {
-    return joinDependencies({
+function updateDependencies(state, options) {
+  return options.vistedPaths.reduce((result, path) => (
+    joinDependencies({
       state: result,
       key: path,
       options
-    });
-  }, state);
+    })
+  ), state);
+};
+
+export default options => {
+  const state = joinRefs(options.state, [], options);
+  return updateDependencies(state, options);
 };
