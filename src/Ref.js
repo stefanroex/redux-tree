@@ -1,1 +1,1 @@
-export default (...args) => args;
+export default (...args) => `$ref|${args.join('|')}`;

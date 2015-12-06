@@ -1,11 +1,11 @@
 import { Set } from 'immutable';
 
 function pathToKey(path) {
-  return path.join('.');
+  return path.join('|');
 }
 
 function keyToPath(key) {
-  return key.split('.').filter(k => k.split(',').length === 1);
+  return key.split('|');
 }
 
 export default ({
@@ -25,15 +25,17 @@ export default ({
       vistedPaths.push(pathToKey(path));
     }
 
-    if (data instanceof Array) {
-      const key = pathToKey(data);
+    if (typeof data === 'string' && data.substring(0, 4) == "$ref") {
+      const key = data.slice(5);
+      const keyPath = keyToPath(key);
       if (refs[key]) {
+        console.log(path);
         refs[key].paths = refs[key].paths.add(pathToKey(path))
         return refs[key].result;
       }
 
-      const result = joinRefs(state.getIn(data), data, force);
-      refs[key] = { key: data, paths: Set.of(pathToKey(path)), result };
+      const result = joinRefs(state.getIn(keyPath), keyPath, force);
+      refs[key] = { key: keyPath, paths: Set.of(pathToKey(path)), result };
       return result;
     }
 

@@ -135,5 +135,9 @@ describe('Redux Tree', () => {
       expect(result2.getIn(['comments', '1', 'name'])).to.equal('new-comment');
       expect(result2.getIn(['users', '2', 'comments', 0, 'name'])).to.equal('new-comment');
     });
+
+    it.only('test', () => {
+      expect(result.getIn(['users', '3', 'comments'])).to.equal('test');
+    });
   });
 });
