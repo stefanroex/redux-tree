@@ -1,64 +1,54 @@
 import { Set } from 'immutable';
 import { pathToRef, refToPath, isRef } from './utils';
 
-export default ({
-  state,
-  lastState,
-  lastTree,
-  refs
-}) => {
-  const vistedPaths = [];
+const joinRefs = (data, path = [], options) => {
+  const {
+    vistedPaths,
+    state,
+    lastState,
+    lastTree,
+    refs,
+    force = false
+  } = options;
 
-  const joinRefs = (data, path = [], force = false) => {
-    if (!force && state.getIn(path) === lastState.getIn(path)) {
-      return lastTree.getIn(path);
-    }
+  if (!force && state.getIn(path) === lastState.getIn(path)) {
+    return lastTree.getIn(path);
+  }
 
-    if (lastState.size) {
-      vistedPaths.push(pathToRef(path));
-    }
+  if (lastState.size) {
+    vistedPaths.push(pathToRef(path));
+  }
 
-    if (Set.isSet(data)) {
-      return data;
-    }
-
-    if (isRef(data)) {
-      const keyPath = refToPath(data);
-      if (refs[data]) {
-        refs[data].paths = refs[data].paths.add(pathToRef(path))
-        return refs[data].result;
-      }
-
-      const result = joinRefs(state.getIn(keyPath), keyPath, force);
-      refs[data] = { key: keyPath, paths: Set.of(pathToRef(path)), result };
-      return result;
-    }
-
-    if (typeof data === 'object') {
-      return data.map((d, k) => {
-        return joinRefs(d, [...path, k], force);
-      });
-    }
-
+  if (Set.isSet(data)) {
     return data;
-  };
+  }
 
-  const joinDependencies = (data, key) => {
-    const ref = refs[key];
-    if (!ref) {
-      return;
+  if (isRef(data)) {
+    const keyPath = refToPath(data);
+    if (refs[data]) {
+      refs[data].paths = refs[data].paths.add(pathToRef(path))
+      return refs[data].result;
     }
 
-    ref.result = joinRefs(data.getIn(ref.key), ref.key, true);
-    ref.paths.forEach(pathKey => {
-      const path = refToPath(pathKey);
-      data.setIn(path, ref.result);
-      joinDependencies(data, pathToRef(path.slice(0, -1)));
-    });
-  };
+    const result = joinRefs(state.getIn(keyPath), keyPath, options);
+    refs[data] = { key: keyPath, paths: Set.of(pathToRef(path)), result };
+    return result;
+  }
 
-  return joinRefs(state).withMutations(result => {
-    vistedPaths.forEach(path => {
+  if (typeof data === 'object') {
+    return data.map((d, k) => {
+      return joinRefs(d, [...path, k], options);
+    });
+  }
+
+  return data;
+};
+
+export default options => {
+  options.vistedPaths = [];
+
+  return joinRefs(options.state, [], options).withMutations(result => {
+    options.vistedPaths.forEach(path => {
       joinDependencies(result, path);
     });
   });
