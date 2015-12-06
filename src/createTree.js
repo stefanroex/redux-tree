@@ -8,6 +8,7 @@ export default () => {
 
   return state => {
     lastTree = stateToTree({
+      vistedPaths: [],
       state,
       lastState,
       lastTree,

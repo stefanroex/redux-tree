@@ -1,7 +1,11 @@
 import { Set } from 'immutable';
-import { pathToRef, refToPath, isRef } from './utils';
+import {
+  pathToRef,
+  refToPath,
+  isRef
+} from './utils';
 
-const joinRefs = (data, path = [], options) => {
+const joinRefs = (node, path = [], options) => {
   const {
     vistedPaths,
     state,
@@ -19,37 +23,49 @@ const joinRefs = (data, path = [], options) => {
     vistedPaths.push(pathToRef(path));
   }
 
-  if (Set.isSet(data)) {
-    return data;
+  if (Set.isSet(node)) {
+    return node;
   }
 
-  if (isRef(data)) {
-    const keyPath = refToPath(data);
-    if (refs[data]) {
-      refs[data].paths = refs[data].paths.add(pathToRef(path))
-      return refs[data].result;
+  if (isRef(node)) {
+    const keyPath = refToPath(node);
+    if (refs[node]) {
+      refs[node].paths = refs[node].paths.add(pathToRef(path))
+      return refs[node].result;
     }
 
     const result = joinRefs(state.getIn(keyPath), keyPath, options);
-    refs[data] = { key: keyPath, paths: Set.of(pathToRef(path)), result };
+    refs[node] = { key: keyPath, paths: Set.of(pathToRef(path)), result };
     return result;
   }
 
-  if (typeof data === 'object') {
-    return data.map((d, k) => {
+  if (typeof node === 'object') {
+    return node.map((d, k) => {
       return joinRefs(d, [...path, k], options);
     });
   }
 
-  return data;
+  return node;
+};
+
+const joinDependencies = (state, key, options) => {
+  const ref = options.refs[key];
+  if (!ref) {
+    return;
+  }
+
+  ref.result = joinRefs(state.getIn(ref.key), ref.key, {...options, force: true});
+  ref.paths.forEach(pathKey => {
+    const path = refToPath(pathKey);
+    state.setIn(path, ref.result);
+    joinDependencies(state, pathToRef(path.slice(0, -1)), options);
+  });
 };
 
 export default options => {
-  options.vistedPaths = [];
-
-  return joinRefs(options.state, [], options).withMutations(result => {
+  return joinRefs(options.state, [], options).withMutations(state => {
     options.vistedPaths.forEach(path => {
-      joinDependencies(result, path);
+      joinDependencies(state, path, options);
     });
   });
 };
