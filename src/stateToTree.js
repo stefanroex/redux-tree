@@ -48,24 +48,34 @@ const joinRefs = (node, path = [], options) => {
   return node;
 };
 
-const joinDependencies = (state, key, options) => {
+const joinDependencies = ({state, key, options}) => {
   const ref = options.refs[key];
   if (!ref) {
-    return;
+    return state;
   }
 
-  ref.result = joinRefs(state.getIn(ref.key), ref.key, {...options, force: true});
-  ref.paths.forEach(pathKey => {
-    const path = refToPath(pathKey);
-    state.setIn(path, ref.result);
-    joinDependencies(state, pathToRef(path.slice(0, -1)), options);
+  ref.result = joinRefs(state.getIn(ref.key), ref.key, {
+    ...options,
+    force: true
   });
+
+  return ref.paths.reduce((result, pathKey) => {
+    const path = refToPath(pathKey);
+    return joinDependencies({
+      state: result.setIn(path, ref.result),
+      key: pathToRef(path.slice(0, -1)),
+      options
+    });
+  }, state);
 };
 
 export default options => {
-  return joinRefs(options.state, [], options).withMutations(state => {
-    options.vistedPaths.forEach(path => {
-      joinDependencies(state, path, options);
+  const state = joinRefs(options.state, [], options);
+  return options.vistedPaths.reduce((result, path) => {
+    return joinDependencies({
+      state: result,
+      key: path,
+      options
     });
-  });
+  }, state);
 };
