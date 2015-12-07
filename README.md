@@ -51,12 +51,15 @@ const result = stateToTree(state);
 
 ## Caveats
 
-* Sets get converted to Maps.
+* Sets are converted to Maps.
 
 ## Todo
 
 * Code cleanup
-* Removal of code
+* Extra ref-types
+* Test if it works when state is removed
+* Remove Immutable.js rependency in library code (still requires the an immutable state)
+* Find a way to convert Sets back to Sets
 
 ## License
 
