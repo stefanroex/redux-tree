@@ -1,46 +1,63 @@
 # Redux Tree (WIP)
 
-Denormalizes the Redux app state to a tree structure for easy consumption by the React views.
+Denormalize your immutable Redux store for easy consumption by the views.
 
-## Rational
+* Define your relations in the Redux store.
+* Denormalize the relations with a single function.
+* Keeps track of the previous state and only updates what is nessecary.
+* Works with `PureRenderMixin`.
+* Requires Immutable.js.
 
-You're probably normalizing your Redux app state for easy access and flexibilty. However, you need to denormalize the state somehow. You're probably using something like reselect to help you with that. This works, but for simple relations it's a lot of useless plumbing.
+## Why
 
-## Gettings started
+We save our Redux app state in a normalized way and when a React component wants to consume the state, we'll denormalize it with some helper function, maybe even with the help of [reselect](https://github.com/rackt/reselect). This is extremely powerfull when the transformations are advanced, but most of the time you're just combining several parts of the state into a single entity.
+
+This library enables you to define the relations directly in the reducers. You can denormalize the app state with a single function.
+
+## Installation
+
+    Not yet published on npm...
+
+## Example
 
 ```javascript
+import { Map } from 'immutable';
 import { createTree, Ref } from 'redux-tree';
 
 // Define a relation in your appState via Ref.
-Ref('users', 1);
+const state = Map({
+  posts: Map({
+    id1: Map({
+      id: 'id1',
+      name: 'post1',
+      user: Ref('users', 'id1');
+    })
+  }),
+  users: Map({
+    id1: Map({
+      id: 'id1',
+      name: 'user1'
+    })
+  })
+});
 
 // Create the tree transformer function.
 stateToTree = createTree();
 
 // Give the transformer your state and it will automatically join the relations
-result = stateToTree(state);
+const result = stateToTree(state);
+// result.getIn(['posts', 'id1', 'user']) #=> Map({id: 'id1', name: 'user1'})
 ```
+
+## Caveats
+
+* Sets get converted to Maps.
+
+## Todo
+
+* Code cleanup
+* Removal of code
 
 ## License
 
 The MIT License (MIT)
-
-Copyright (c) 2015 Stefan Roex
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
