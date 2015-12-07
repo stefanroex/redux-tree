@@ -24,7 +24,7 @@ function joinRefs(node, path = [], options) {
   }
 
   if (Set.isSet(node)) {
-    return node;
+    node = node.toMap();
   }
 
   if (isRef(node)) {

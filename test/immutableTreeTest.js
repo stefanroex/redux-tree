@@ -79,10 +79,10 @@ describe('Redux Tree', () => {
       expect(result.getIn(['users', '2', 'comments', 1, 'name'])).to.equal('comment2');
     });
 
-    xit('Set references', () => {
+    it('Set references', () => {
       const comments = result.getIn(['users', '3', 'comments']);
       const ids = comments.map(comment => comment.get('id'));
-      expect(ids).to.equal(Set.of(1, 2));
+      expect(ids.toSet()).to.equal(Set.of(1, 2));
     });
   });
 
@@ -130,8 +130,18 @@ describe('Redux Tree', () => {
     it('List references', () => {
       const updatedState = state.setIn(['comments', '1', 'name'], 'new-comment');
       const result2 = stateToTree(updatedState);
-      expect(result.getIn(['users', '2', 'comments', 0]) === result2.getIn(['users', 'comments', 0])).to.equal(false);
-      expect(result.getIn(['users', '2', 'comments', 1]) === result2.getIn(['users', 'comments', 1])).to.equal(false);
+      expect(result.getIn(['users', '2', 'comments', 0]) === result2.getIn(['users', '2', 'comments', 0])).to.equal(false);
+      expect(result.getIn(['users', '2', 'comments', 1]) === result2.getIn(['users', '2', 'comments', 1])).to.equal(true);
+      expect(result2.getIn(['comments', '1', 'name'])).to.equal('new-comment');
+      expect(result2.getIn(['users', '2', 'comments', 0, 'name'])).to.equal('new-comment');
+    });
+
+    it('Set references', () => {
+      const updatedState = state.setIn(['comments', '1', 'name'], 'new-comment');
+      const result2 = stateToTree(updatedState);
+
+      expect(result.getIn(['users', '3', 'comments', '$ref|comments|1']) === result2.getIn(['users', '3', 'comments', '$ref|comments|1'])).to.equal(false);
+      expect(result.getIn(['users', '3', 'comments', '$ref|comments|2']) === result2.getIn(['users', '3', 'comments', '$ref|comments|2'])).to.equal(true);
       expect(result2.getIn(['comments', '1', 'name'])).to.equal('new-comment');
       expect(result2.getIn(['users', '2', 'comments', 0, 'name'])).to.equal('new-comment');
     });

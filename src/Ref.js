@@ -1,1 +1,3 @@
-export default (...args) => `$ref|${args.join('|')}`;
+import { pathToRef } from './utils';
+
+export default (...args) => pathToRef(args);

@@ -1,8 +1,7 @@
 const PREFIX = '$ref';
 
 export function isRef(data) {
-  return typeof data === 'string' &&
-    data.substring(0, 4) === PREFIX;
+  return typeof data === 'string' && data.startsWith(PREFIX);
 }
 
 export function pathToRef(path) {
@@ -10,5 +9,11 @@ export function pathToRef(path) {
 }
 
 export function refToPath(ref) {
-  return ref.split('|').slice(1);
+  const r = ref.split('|').slice(1);
+  const index = r.indexOf('$ref')
+  if (index === -1) {
+    return r;
+  }
+  const extra = r.slice(index+1);
+  return r.slice(0, index).concat([pathToRef(extra)]);
 }
