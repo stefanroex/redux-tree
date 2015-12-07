@@ -3,6 +3,8 @@ import stateToTree from './stateToTree';
 
 export default () => {
   const refs = {};
+  const newRefs = {};
+  const reverseRefs = {};
   let lastState = Map();
   let lastTree = null;
 
@@ -12,7 +14,9 @@ export default () => {
       state,
       lastState,
       lastTree,
-      refs
+      refs,
+      newRefs,
+      reverseRefs
     });
     lastState = state;
     return lastTree;
