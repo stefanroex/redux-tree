@@ -1,4 +1,5 @@
 # Redux Tree (WIP)
+[![Build Status](https://travis-ci.org/stefanroex/redux-tree.svg)](https://travis-ci.org/stefanroex/redux-tree)
 
 Denormalize your immutable Redux store for easy consumption by the views.
 
