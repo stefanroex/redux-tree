@@ -10,14 +10,14 @@
   "author": "Stefan Roex",
   "license": "MIT",
   "dependencies": {
-    "babel-preset-es2015": "^6.3.13",
-    "chai-immutable": "^1.5.3",
     "immutable": "^3.7.5"
   },
   "devDependencies": {
     "babel-core": "^6.3.13",
+    "babel-preset-es2015": "^6.3.13",
     "babel-preset-stage-0": "^6.3.13",
     "chai": "^3.4.1",
+    "chai-immutable": "^1.5.3",
     "mocha": "^2.3.4"
   }
 }
